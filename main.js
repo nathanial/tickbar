@@ -15,23 +15,16 @@ class Tickbar {
 		this.canvas.style.width = `${this.width}px`;
 		this.canvas.style.height = `${this.height}px`;
 		this.ctx = this.canvas.getContext('2d');
-		this.transform = {pan: {x:0,y:0}, zoom: 1};
+		this.dataStart = 0;
+		this.dataWidth = this.width;
 	}
 
 	get minorTickInterval() {
-		return this._minorTickInterval * this.transform.zoom;
+		return this._minorTickInterval * (this.screenWidth / this.dataWidth);
 	}
 
 	get majorTickInterval(){
-		return this._majorTickInterval * this.transform.zoom;
-	}
-
-	get dataWidth() {
-		return this.width / this.transform.zoom;
-	}
-
-	get dataHeight() {
-		return this.height;
+		return this._majorTickInterval * (this.screenWidth / this.dataWidth);
 	}
 
 	get screenWidth() {
@@ -59,11 +52,7 @@ class Tickbar {
 	}
 
 	get originX() {
-		return this.transform.pan.x * this.transform.zoom;
-	}
-
-	get endX() {
-		return this.startX + this.canvasWidthl
+		return this.dataStart;
 	}
 
 	drawTicks() {
@@ -102,7 +91,7 @@ class Tickbar {
 		this.ctx.fillStyle = "black";
 		this.ctx.textAlign = "center";
 		this.ctx.font = '16px sans serif';
-		this.ctx.fillText(index, x, this.height + 20);
+		this.ctx.fillText(index * this._majorTickInterval, x, this.height + 20);
 	}
 
 	drawMinorTick(index) {
@@ -114,81 +103,38 @@ class Tickbar {
 		this.ctx.stroke();
 		this.ctx.closePath();
 	}
-
-	getMajorTickCount() {
-		return this.dataWidth / this.majorTickInterval;
-	}
-
-	getMinorTickCount(){
-		return this.dataWidth / this.minorTickInterval;
-	}
-
-	setTransform(transform) {
-		this.transform = _.cloneDeep(transform);
-		this.render();
-	}
 }
 
 const tickbar = new Tickbar({
 	width: 600,
 	height: 50,
 	orientation: 'horizontal',
-	majorTickInterval: 50,
-	minorTickInterval: 10
+	majorTickInterval: 100,
+	minorTickInterval: 20
 });
 document.body.appendChild(tickbar.render());
 document.body.style.height = '1000px';
 document.body.style.overflow = 'hidden';
-let dragging = false;
-let start = {x:0,y:0};
 
-let transform = {
-	pan: {x: 0, y :0},
-	zoom: 1
-};
-
-document.body.addEventListener('mousedown', (event) => {
-	dragging = true;
-	start = {x: event.pageX, y: event.pageY};
-});
-
-document.body.addEventListener('mouseup', (event) => {
-	dragging = false;
-	transform = _.cloneDeep(tickbar.transform);
-});
-
-
-document.body.addEventListener('mousemove', (event) => {
-	if(dragging) {
-		const deltaX = event.pageX - start.x;
-		const deltaY = event.pageY - start.y;
-		const newTransform = _.cloneDeep(transform);
-		newTransform.pan.x += deltaX * tickbar.sample / transform.zoom;
-		newTransform.pan.y += deltaY;
-		tickbar.setTransform(newTransform);
+window.onDataChanged = (type, event) => {
+	const newValue = parseInt(event.target.value, 10);
+	if(type === 'start'){
+		tickbar.dataStart = newValue;
+	} else {
+		tickbar.dataWidth = newValue;
 	}
-});
-
-function zoomIn(){
-	const newTransform = _.cloneDeep(tickbar.transform);
-	newTransform.zoom *= 1.1;
-	tickbar.setTransform(newTransform);
-	transform = newTransform;
+	if(tickbar.dataWidth > 8000) {
+		tickbar._minorTickInterval = 160;
+		tickbar._majorTickInterval = 800;
+	} else if(tickbar.dataWidth > 4000){
+		tickbar._minorTickInterval = 80;
+		tickbar._majorTickInterval = 400;
+	} else if(tickbar.dataWidth > 2000) {
+		tickbar._minorTickInterval = 40;
+		tickbar._majorTickInterval = 200;
+	} else {
+		tickbar._minorTickInterval = 20;
+		tickbar._majorTickInterval = 100;
+	}
 	tickbar.render();
-}
-
-function zoomOut(){
-	const newTransform = _.cloneDeep(tickbar.transform);
-	newTransform.zoom *= 0.9;
-	tickbar.setTransform(newTransform);
-	transform = newTransform;
-	tickbar.render();
-}
-
-// document.body.addEventListener('wheel', (event) => {
-//   if(event.deltaY < 0) {
-//     zoomIn();
-//   } else {
-//     zoomOut();
-//   }
-// });
+};

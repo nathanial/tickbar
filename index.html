@@ -3,8 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <title>Tickbar Demo</title>
+    <style>
+        .inputs {
+            margin: 10px;
+        }
+    </style>
 </head>
 <body>
+<div class="inputs">
+    <label>Data Start</label>
+    <input type="number" onchange="onDataChanged('start', event);" step="100">
+    <label>Data Width</label>
+    <input type="number" onchange="onDataChanged('width', event)" step="100">
+</div>
 <script src="bundle.js"></script>
 </body>
 </html>
